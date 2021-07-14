@@ -105,7 +105,7 @@ class Question(models.Model):
 
     # question text
     question = models.TextField()
-    # question grade/mark
+    # question grade
     grade = models.IntegerField()
 
     # <HINT> A sample model method to calculate if learner get the score of the question
@@ -117,6 +117,10 @@ class Question(models.Model):
         else:
             return False
 
+    # String to display when grabbing object
+    def __str__(self):
+        return self.question
+
 
 #  <HINT> Create a Choice Model with:
     # Used to persist choice content for a question
@@ -127,6 +131,10 @@ class Choice(models.Model):
     choice_text = models.TextField()
     # Marker for grading
     is_correct = models.BooleanField()
+
+    # String to display when grabbing obj.
+    def __str__(self):
+        return self.choice_text
 
 # <HINT> The submission model
 # One choice could belong to multiple submissions (...backwards access?)
