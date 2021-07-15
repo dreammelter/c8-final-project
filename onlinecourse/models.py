@@ -126,7 +126,7 @@ class Question(models.Model):
     # Used to persist choice content for a question
 class Choice(models.Model):
     # One-To-Many since this causes issues with migrations..
-    questions = models.ForeignKey(Question, on_delete=models.CASCADE, default=1)
+    questions = models.ForeignKey(Question, on_delete=models.CASCADE, default=1) #something about that default number makes it work
     # Choice Text/Content
     choice_text = models.TextField()
     # Marker for grading
