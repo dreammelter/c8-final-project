@@ -125,8 +125,8 @@ class Question(models.Model):
 #  <HINT> Create a Choice Model with:
     # Used to persist choice content for a question
 class Choice(models.Model):
-    # Many-To-Many to make choices reusable cuz why not
-    questions = models.ManyToManyField(Question)
+    # One-To-Many since this causes issues with migrations..
+    questions = models.ForeignKey(Question, on_delete=models.CASCADE, default=1)
     # Choice Text/Content
     choice_text = models.TextField()
     # Marker for grading
@@ -140,4 +140,4 @@ class Choice(models.Model):
 # One choice could belong to multiple submissions (...backwards access?)
 class Submission(models.Model):
     enrollment = models.ForeignKey(Enrollment, on_delete=models.CASCADE)
-    chocies = models.ManyToManyField(Choice)
+    choices = models.ManyToManyField(Choice)
