@@ -41,49 +41,59 @@
 
     <!-- Page content -->
     <div class="container-fluid">
+        {% if user.is_authenticated %}
+        <!-- Show course content and exam questions if they're authenticated -->
             <h2>{{ course.name }}</h2>
             <div class="card-columns-vertical">
-                {% for lesson in course.lesson_set.all %}
+            {% for lesson in course.lesson_set.all %}
                     <div class="card mt-1">
                         <div class="card-header"><h5>Lesson {{lesson.order|add:1}}: {{lesson.title}}</h5></div>
-                        <div class="card-body">{{lesson.content}}</div>
-                    </div>
-                {% endfor %}
-            </div>
-            <!-- Task: show questions and choices (if they're authenticated) -->
-            {% if user.is_authenticated %}
-            <!--This bootstrap bit needs something to toggle the feature with...-->
-            <a class="btn btn-primary" data-toggle="collapse" href="#exam" aria-expanded="false" aria-controls="collapseExam">
-                ↓ Take the Exam! ↓
-            </a>
-            <div id="exam" class="collapse">
-                <form id="questionform" action="submit" method="POST">
-                    <div class="card mt-1">
-                        <!-- <HINT> Each example will have many questions -->
-                        {% for question in question_list %}
-                            <div class="card-header">
-                                <!-- Grab the question text -->
-                                <h5>{{ question.question_text }}</h5>
+                        <div class="card-body">
+                            {{lesson.content}}
+                            <br>
+
+                            <!--The button to toggle the Exam Collaspe feature...-->
+                            <button class="btn btn-primary btn-block" type="button" data-toggle="collapse" data-target="#exam-{{lesson.id}}" 
+                                aria-expanded="false" aria-controls="collapseExam_{{lesson.id}}">
+                                ↓ Take the Exam! ↓
+                            </button>
+
+                            <!--The exam content to toggle-->
+                            <div id="exam-{{lesson.id}}" class="collapse">
+                                <form id="questionform" action="submit" method="POST">
+                                    <div class="card mt-1">
+                                        <!-- <HINT> Each example will have many questions -->
+                                        {% for question in lesson.question_set.all %}
+                                            <div class="card-header">
+                                                <!-- Grab the question text -->
+                                                <h5>{{ question.question }}</h5>
+                                            </div>
+                                            {% csrf_token %}
+                                            <div class="form-group">
+                                                <!-- <HINT> Each question will have many choices -->
+                                                {% for choice in question.choice_set.all %}
+                                                <div class="form-check">
+                                                    <label class="form-check-label">
+                                                        <input type="checkbox" name="choice_{{choice.id}}"
+                                                            class="form-check-input" id="{{choice.id}}"
+                                                            value="{{choice.id}}">{{ choice.choice_text }}
+                                                    </label>
+                                                </div>
+                                                {% endfor %}
+                                            </div>
+                                        {% endfor %}
+                                        <input class="btn btn-success btn-block" type="submit" value="Submit">
+                                    </div>
+                                </form>
                             </div>
-                            {% csrf_token %}
-                            <div class="form-group">
-                                <!-- <HINT> Each question will have many choices -->
-                                {% for choice in question.choice_set.all %}
-                                <div class="form-check">
-                                    <label class="form-check-label">
-                                        <input type="checkbox" name="choice_{{choice.id}}"
-                                            class="form-check-input" id="{{choice.id}}"
-                                            value="{{choice.id}}">{{ choice.choice_text }}
-                                    </label>
-                                </div>
-                                {% endfor %}
-                            </div>
-                        {% endfor %}
-                        <input class="btn btn-success btn-block" type="submit" value="Submit">
+                        </div>
                     </div>
-                </form>
+            {% endfor %}
             </div>
-            {% endif %}
+            
+            
+            
+        {% endif %}
     </div>
 </body>
 </html>
