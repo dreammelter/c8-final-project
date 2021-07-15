@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.http import HttpResponseRedirect
 # <HINT> Import any new Models here
-from .models import Course, Enrollment
+from .models import Course, Enrollment, Question, Choice, Submission
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
@@ -103,34 +103,80 @@ def enroll(request, course_id):
     return HttpResponseRedirect(reverse(viewname='onlinecourse:course_details', args=(course.id,)))
 
 
-# <HINT> Create a submit view to create an exam submission record for a course enrollment,
-# you may implement it based on following logic:
-         # Get user and course object, then get the associated enrollment object created when the user enrolled the course
-         # Create a submission object referring to the enrollment
-         # Collect the selected choices from exam form
-         # Add each selected choice object to the submission object
-         # Redirect to show_exam_result with the submission id
-#def submit(request, course_id):
-
-
 # <HINT> A example method to collect the selected choices from the exam form from the request object
-#def extract_answers(request):
-#    submitted_anwsers = []
-#    for key in request.POST:
-#        if key.startswith('choice'):
-#            value = request.POST[key]
-#            choice_id = int(value)
-#            submitted_anwsers.append(choice_id)
-#    return submitted_anwsers
+def extract_answers(request):
+    submitted_answers = []
+    for key in request.POST:
+        if key.startswith('choice'):
+            value = request.POST[key]
+            choice_id = int(value)
+            submitted_answers.append(choice_id)
+    return submitted_answers
+
+
+# <HINT> Create a submit view to create an exam submission record for a course enrollment,
+def submit(request, course_id):
+    # Get user and course, then the enrollment obj from when they joined course
+    course = get_object_or_404(Course, pk=course_id)
+    user = request.user
+    enrollment_obj = Enrollment.objects.get(user=user, course=course)
+
+    #Create Submission obj referring to enrollment
+    to_submit = Submission.objects.create(enrollment=enrollment_obj)
+
+    #Collect the list of choices from the exam form
+    choices = extract_answers(request)
+
+    #Break out each choice so we can add em to submission the obj
+    for choice in choices:
+        # get id for each choice in the list (from the Choice Objects)
+        c = Choice.objects.filter(id=int(choice)).get() # typecasting to int? for safety i guess (thing says "Any").
+        # ...and you know what, I broke the Choices model last time by setting a string for ID earlier.
+
+        # add choice to submission obj using ID
+        to_submit.choices.add(c)
+
+    #Save the changes to submission
+    to_submit.save()
+
+    #redirect to 'show_exam_result'
+    ## reverse() is used to avoid hardcoding a URL and can instead use the namespaced viewname
+    # ...submission ID is sent over as additional argument in the redirect
+    # ...alongside course ID cuz the show_exam_result view is gonna look for that too
+    return HttpResponseRedirect(reverse(viewname="onlinecourse:show_exam_result"), args="course.id, submission.id")
 
 
 # <HINT> Create an exam result view to check if learner passed exam and show their question results and result for each question,
-# you may implement it based on the following logic:
-        # Get course and submission based on their ids
-        # Get the selected choice ids from the submission record
-        # For each selected choice, check if it is a correct answer or not
-        # Calculate the total score
-#def show_exam_result(request, course_id, submission_id):
+def show_exam_result(request, course_id, submission_id):
+    # Apparently we're sending all this to a context later so..
+    context = {}
 
+    #Get course + submission with the given IDs
+    course = Course.objects.get(id=course_id)
+    submission = Submission.objects.get(id=submission_id)
+
+    # We're gonna grade these so put gather up the choices from the submission
+    to_grade = submission.choices.all() # note to self: this is a set/list cuz ManyToMany
+    score = 0 # to keep track
+
+    # The spec shared with us wants to show which answers were right/wrong
+    # so we need to know what was selected. Grab from Submissions object
+    selections = Submission.objects.filter(id=submission_id).values_list('choices', flat=True)
+    # values_list() returns tuples, but if you enable 'flat', it just sends a nice list of singular values
+    # ref https://stackoverflow.com/questions/37205793/django-values-list-vs-values
+
+    # and now we grade - with reference to the question a choice belongs to: it holds the grading scale
+    # check just for the stuff that's right by filtering for "is_correct"
+    for i in to_grade.filter(is_correct=True).values_list('question_id'):
+        # up the score with the amount set for the grade in the Question Obj.
+        score += Question.objects.filter(id=i[0]).first().grade
+
+    # finally send off everything in a context bundle for use in the template
+    context['course'] = course_id
+    context['selections'] = selections
+    context['grade'] = score
+
+    # render the context
+    return render(request, 'onlinecourse/exam_result_bootstrap.html', context)
 
 
