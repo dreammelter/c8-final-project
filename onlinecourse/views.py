@@ -100,7 +100,7 @@ def enroll(request, course_id):
         course.total_enrollment += 1
         course.save()
 
-    return HttpResponseRedirect(reverse(viewname='onlinecourse:course_details', args=(course.id,)))
+    return HttpResponseRedirect( reverse(viewname='onlinecourse:course_details', args=(course.id,)) )
 
 
 # <HINT> A example method to collect the selected choices from the exam form from the request object
@@ -172,7 +172,7 @@ def show_exam_result(request, course_id, submission_id):
         score += Question.objects.filter(id=i[0]).first().grade
 
     # finally send off everything in a context bundle for use in the template
-    context['course'] = course_id
+    context['course'] = course #why was I sending the ID and not the object over again??
     context['selections'] = selections
     context['grade'] = score
 
