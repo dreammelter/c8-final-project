@@ -60,7 +60,7 @@
 
                             <!--The exam content to toggle-->
                             <div id="exam-{{lesson.id}}" class="collapse">
-                                <form id="questionform" action="submit" method="POST">
+                                <form id="questionform" action="submit/" method="POST">
                                     <div class="card mt-1">
                                         <!-- <HINT> Each example will have many questions -->
                                         {% for question in lesson.question_set.all %}
@@ -82,7 +82,7 @@
                                                 {% endfor %}
                                             </div>
                                         {% endfor %}
-                                        <input class="btn btn-success btn-block" type="submit" value="Submit">
+                                        <input class="btn btn-success btn-block" type="submit" value="♦ Submit ♦">
                                     </div>
                                 </form>
                             </div>

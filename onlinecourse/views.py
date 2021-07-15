@@ -119,10 +119,10 @@ def submit(request, course_id):
     # Get user and course, then the enrollment obj from when they joined course
     course = get_object_or_404(Course, pk=course_id)
     user = request.user
-    enrollment_obj = Enrollment.objects.get(user=user, course=course)
+    enrollment_obj = Enrollment.objects.filter(user=user, course=course).get() #filter then get the object..
 
     #Create Submission obj referring to enrollment
-    to_submit = Submission.objects.create(enrollment=enrollment_obj)
+    submission = Submission.objects.create(enrollment_id=enrollment_obj.id) #send ID over instead
 
     #Collect the list of choices from the exam form
     choices = extract_answers(request)
@@ -134,16 +134,16 @@ def submit(request, course_id):
         # ...and you know what, I broke the Choices model last time by setting a string for ID earlier.
 
         # add choice to submission obj using ID
-        to_submit.choices.add(c)
+        submission.choices.add(c)
 
     #Save the changes to submission
-    to_submit.save()
+    submission.save()
 
     #redirect to 'show_exam_result'
     ## reverse() is used to avoid hardcoding a URL and can instead use the namespaced viewname
     # ...submission ID is sent over as additional argument in the redirect
     # ...alongside course ID cuz the show_exam_result view is gonna look for that too
-    return HttpResponseRedirect(reverse(viewname="onlinecourse:show_exam_result"), args="course.id, submission.id")
+    return HttpResponseRedirect( reverse(viewname="onlinecourse:show_exam_result", args=(course.id, submission.id)) )
 
 
 # <HINT> Create an exam result view to check if learner passed exam and show their question results and result for each question,
@@ -167,7 +167,7 @@ def show_exam_result(request, course_id, submission_id):
 
     # and now we grade - with reference to the question a choice belongs to: it holds the grading scale
     # check just for the stuff that's right by filtering for "is_correct"
-    for i in to_grade.filter(is_correct=True).values_list('question_id'):
+    for i in to_grade.filter(is_correct=True).values_list('questions_id'):
         # up the score with the amount set for the grade in the Question Obj.
         score += Question.objects.filter(id=i[0]).first().grade
 
